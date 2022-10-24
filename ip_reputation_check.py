@@ -3,9 +3,9 @@
 
 """
 This program checks the reputation of a list of IP V4 addresses provided in stdin.
-Initial release is based on information from Shodan, VirusTotal and IpQualityScore.
+Initial release is based on information from Shodan, VirusTotal, ApiVoid and IpQualityScore.
 Free accounts of these services can be used, but it limits the amount of requests (per minute/day/month). 
-API keys must be stored in the .env file : SHODAN_API_KEY VIRUS_TOTAL_KEY IPQS_KEY 
+API keys must be stored in the .env file : SHODAN_API_KEY VIRUS_TOTAL_KEY APIVOID_KEY IPQS_KEY 
 V1.0
 23 october 2022
 MIT licence
@@ -21,6 +21,20 @@ import os
 import sys
 from dotenv import load_dotenv
 from dataclasses import dataclass
+
+
+@dataclass
+class ApiVoidInfo:
+    """
+    """
+    risk_score: int
+    detection_rate: str
+
+    def __init__(self, risk_score, detection_rate) -> None:
+        self.risk_score = risk_score
+        self.detection_rate = detection_rate
+
+
 
 
 @dataclass
@@ -79,13 +93,15 @@ class DisplayIpReputationElements:
     shodan_info: ShodanInfo
     vt_info: VirusTotalInfo
     ipqs_info: IpQualityScoreInfo
+    apivoid_info: ApiVoidInfo
 
-    def __init__(self, ip_addr: str, private: bool, shodan_info: ShodanInfo, vt_info: VirusTotalInfo, ipqs_info: IpQualityScoreInfo) -> None:
+    def __init__(self, ip_addr: str, private: bool, shodan_info: ShodanInfo, vt_info: VirusTotalInfo, ipqs_info: IpQualityScoreInfo, apivoid_info: ApiVoidInfo) -> None:
         self.ip_addr = ip_addr
         self.private = private
         self.shodan_info = shodan_info
         self.vt_info = vt_info
         self.ipqs_info = ipqs_info
+        self.apivoid_info = apivoid_info
 
     def display_IpReputationElements(self):
         if self.private:
@@ -94,7 +110,12 @@ class DisplayIpReputationElements:
             print("{} is a public IP address".format(self.ip_addr))
             if self.shodan_info is not None:
                 print(
-                    "Shodan           -> number of open ports:{}".format(self.shodan_info.nb_open_ports))
+                    "Shodan           -> number of open ports: {}".format(self.shodan_info.nb_open_ports))
+            if self.apivoid_info is not None:
+                print(
+                    "apiVoid          -> Risk score: {}".format(self.apivoid_info.risk_score))    
+                print(
+                    "apiVoid          -> Detection rate: {}".format(self.apivoid_info.detection_rate))                    
             if self.vt_info is not None:
                 print(
                     "VirusTotal       -> Number of reports saying it is malicious: {}".format(self.vt_info.nb_malicious))
@@ -137,6 +158,8 @@ class IpAddressCheckReputation(object):
         self.shodan_api_key = os.getenv("SHODAN_API_KEY")
         self.virustotal_api_key = os.getenv("VIRUS_TOTAL_KEY")
         self.ipqualityscore_api_key = os.getenv("IPQS_KEY")
+        self.apivoid_api_key = os.getenv("APIVOID_KEY")
+        
 
         # Connect to Shodan API
         if self.shodan_api_key is not None:
@@ -145,11 +168,34 @@ class IpAddressCheckReputation(object):
             except shodan.APIError as e:
                 print('Shodan error: {}'.format(e), file=sys.stderr)
 
+    def apivoid_stats(self) -> ApiVoidInfo:
+        """
+        Call ApiVoid API to get information
+        """
+
+        if self.apivoid_api_key is None:
+            return None
+
+        try:
+            url = "https://endpoint.apivoid.com/iprep/v1/pay-as-you-go/?key="+self.apivoid_api_key+"&ip="+format(self.ip)
+            response = requests.get(url)
+            res = json.loads(response.text)
+            if res["success"] == True:
+                risk_score = res["data"]["report"]["risk_score"]["result"]
+                detection_rate = res["data"]["report"]["blacklists"]["detection_rate"]
+            else:
+                return None
+        except Exception as e:
+            print("ApiVoid error: {}".format(e), file=sys.stderr)
+            return None
+
+        return ApiVoidInfo(risk_score, detection_rate)
+
+        
+
     def virustotal_stats(self) -> VirusTotalInfo:
         """
         Call VirusTotal API to get information
-        If ok, return True, malicious+suspicious, reputation
-        If fails, return False, 0, 0
         """
         if self.virustotal_api_key is None:
             return None
@@ -178,11 +224,7 @@ class IpAddressCheckReputation(object):
     def ip_quality_score_stats(self) -> IpQualityScoreInfo:
         """
         Call IpQualityScore API to get information
-        If ok, return True, fraud_score
-        If fails, return False, 0
         """
-        info = ()
-
         if self.ipqualityscore_api_key is None:
             return None
 
@@ -208,8 +250,6 @@ class IpAddressCheckReputation(object):
     def shodan_stats(self) -> ShodanInfo:
         """
         Call Shodan API to get information
-        If ok, return True, number_of_open_ports
-        If fails, return False, 0
         """
 
         if self.shodan_api_key is None:
@@ -258,15 +298,17 @@ def process_ip_address(ip_arg) -> DisplayIpReputationElements:
         if not ip_address_to_check.is_private:
             # Shodan infomation
             shodan_info = ip_address_info.shodan_stats()
+            # ApiVoid information
+            apivoid_info = ip_address_info.apivoid_stats()
             # VirusTotal information
             vt_info = ip_address_info.virustotal_stats()
             # IpQualityScore information
             ip_qual_info = ip_address_info.ip_quality_score_stats()
             return DisplayIpReputationElements(ip_address_to_check, ip_address_to_check.is_private,
-                                           shodan_info, vt_info, ip_qual_info)
+                                           shodan_info, vt_info, ip_qual_info, apivoid_info)
         else:
             return DisplayIpReputationElements(ip_address_to_check, ip_address_to_check.is_private,
-                                           None, None, None)
+                                           None, None, None, None)
     else:
         return None
 
