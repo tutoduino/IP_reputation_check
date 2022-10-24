@@ -1,8 +1,8 @@
 # IP_Reputation_Check
 A python3 program to check the reputation of a list of IP addresses
-Initial release is based on information from Shodan, VirusTotal and IpQualityScore.
+Initial release is based on information from Shodan, VirusTotal, APIVoid and IpQualityScore.
 Free accounts of these services can be used, but it limits the amount of requests (per minute/day/month).
-API keys (SHODAN_API_KEY VIRUS_TOTAL_KEY IPQS_KEY) must be stored in the .env file.
+API keys (SHODAN_API_KEY; VIRUS_TOTAL_KEY; APIVOID_KEY; IPQS_KEY) must be stored in the .env file.
 Main program reads the IP addresses from stdin, CSV and PCAP files parsers are available
 
 Usage for manual entry of IP list: 
