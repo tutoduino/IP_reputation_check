@@ -113,9 +113,9 @@ class DisplayIpReputationElements:
                     "Shodan           -> number of open ports: {}".format(self.shodan_info.nb_open_ports))
             if self.apivoid_info is not None:
                 print(
-                    "apiVoid          -> Risk score: {}".format(self.apivoid_info.risk_score))    
+                    "ApiVoid          -> Risk score: {}".format(self.apivoid_info.risk_score))    
                 print(
-                    "apiVoid          -> Detection rate: {}".format(self.apivoid_info.detection_rate))                    
+                    "ApiVoid          -> Detection rate: {}".format(self.apivoid_info.detection_rate))                    
             if self.vt_info is not None:
                 print(
                     "VirusTotal       -> Number of reports saying it is malicious: {}".format(self.vt_info.nb_malicious))
