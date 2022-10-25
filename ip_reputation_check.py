@@ -42,9 +42,11 @@ class ShodanInfo:
     """
     """
     nb_open_ports: int
+    hostname: str
 
-    def __init__(self, nb_open_ports) -> None:
+    def __init__(self, nb_open_ports, hostname) -> None:
         self.nb_open_ports = nb_open_ports
+        self.hostname = hostname
 
 
 @dataclass
@@ -111,6 +113,8 @@ class DisplayIpReputationElements:
             if self.shodan_info is not None:
                 print(
                     "Shodan           -> number of open ports: {}".format(self.shodan_info.nb_open_ports))
+                print(
+                    "Shodan           -> hostnames: {}".format(self.shodan_info.hostname))
             if self.apivoid_info is not None:
                 print(
                     "ApiVoid          -> Risk score: {}".format(self.apivoid_info.risk_score))    
@@ -256,11 +260,15 @@ class IpAddressCheckReputation(object):
             return None
         try:
             host = self.shodan_api.host(format(self.ip))
+            nb_opened_ports = len(host['data'])
+            hostname = []
+            for cpt in range(len(host['hostnames'])):
+                hostname.append(host['hostnames'][cpt])
         except shodan.APIError as e:
             print("Shodan error: {}".format(e), file=sys.stderr)
             return None
 
-        return ShodanInfo(len(host['data']))
+        return ShodanInfo(nb_opened_ports,hostname)
 
 
 def is_ip_v4_valid_ip_address(ip_addr):
