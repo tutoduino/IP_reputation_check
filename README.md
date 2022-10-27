@@ -23,5 +23,3 @@ IpQualityScore   -> Bot activity: True
 IpQualityScore   -> VPN status: True
 IpQualityScore   -> Proxy status: True
 IpQualityScore   -> Tor status: False
-------------------------------------------
-
