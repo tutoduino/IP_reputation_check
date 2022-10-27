@@ -9,6 +9,7 @@ Usage with CVS file (";" separator): $python3 parse_ip_csv.py csv_file.csv | pyt
 
 Example:
 $echo "139.162.99.243" | python3 ip_reputation_check.py
+
 139.162.99.243 is a public IP address
 Shodan           -> Number of open ports: 1
 Shodan           -> Hostnames: ['scan-42.security.ipip.net']
