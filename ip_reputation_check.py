@@ -3,9 +3,9 @@
 
 """
 This program checks the reputation of a list of IP V4 addresses provided in stdin.
-Initial release is based on information from Shodan, VirusTotal, ApiVoid and IpQualityScore.
-Free accounts of these services can be used, but it limits the amount of requests (per minute/day/month). 
-API keys must be stored in the .env file : SHODAN_API_KEY VIRUS_TOTAL_KEY APIVOID_KEY IPQS_KEY 
+Initial release is based on information from Shodan, VirusTotal, ApiVoid, AbuseIpDb and IpQualityScore.
+Free accounts of these services can be used, but it limits the amount of requests (per minute/day/month).
+API keys must be stored in the .env file : SHODAN_API_KEY VIRUS_TOTAL_KEY APIVOID_KEY IPQS_KEY IPABUSEDB_KEY
 V1.0
 23 october 2022
 MIT licence
@@ -33,8 +33,6 @@ class ApiVoidInfo:
     def __init__(self, risk_score, detection_rate) -> None:
         self.risk_score = risk_score
         self.detection_rate = detection_rate
-
-
 
 
 @dataclass
@@ -68,6 +66,18 @@ class VirusTotalInfo:
 
 
 @dataclass
+class AbuseIpDbInfo:
+    """
+    """
+    total_reports: int
+    abuse_confidence_score: int
+
+    def __init__(self, total_reports, abuse_confidence_score) -> None:
+        self.total_reports = total_reports
+        self.abuse_confidence_score = abuse_confidence_score
+
+
+@dataclass
 class IpQualityScoreInfo:
     """
     """
@@ -97,13 +107,14 @@ class DisplayIpReputationElements:
     ipqs_info: IpQualityScoreInfo
     apivoid_info: ApiVoidInfo
 
-    def __init__(self, ip_addr: str, private: bool, shodan_info: ShodanInfo, vt_info: VirusTotalInfo, ipqs_info: IpQualityScoreInfo, apivoid_info: ApiVoidInfo) -> None:
+    def __init__(self, ip_addr: str, private: bool, shodan_info: ShodanInfo, vt_info: VirusTotalInfo, ipqs_info: IpQualityScoreInfo, apivoid_info: ApiVoidInfo, abuseipdb_info: AbuseIpDbInfo) -> None:
         self.ip_addr = ip_addr
         self.private = private
         self.shodan_info = shodan_info
         self.vt_info = vt_info
         self.ipqs_info = ipqs_info
         self.apivoid_info = apivoid_info
+        self.abuseipdb_info = abuseipdb_info
 
     def display_IpReputationElements(self):
         if self.private:
@@ -112,9 +123,14 @@ class DisplayIpReputationElements:
             print("{} is a public IP address".format(self.ip_addr))
             if self.shodan_info is not None:
                 print(
-                    "Shodan           -> number of open ports: {}".format(self.shodan_info.nb_open_ports))
+                    "Shodan           -> Number of open ports: {}".format(self.shodan_info.nb_open_ports))
                 print(
-                    "Shodan           -> hostnames: {}".format(self.shodan_info.hostname))
+                    "Shodan           -> Hostnames: {}".format(self.shodan_info.hostname))
+            if self.abuseipdb_info is not None:
+                print(
+                    "AbuseIpDb        -> Number of reports: {}".format(self.abuseipdb_info.total_reports))
+                print(
+                    "AbuseIpDb        -> Confidence of Abuse: {}".format(self.abuseipdb_info.abuse_confidence_score))
             if self.apivoid_info is not None:
                 print(
                     "ApiVoid          -> Risk score: {}".format(self.apivoid_info.risk_score))    
@@ -163,6 +179,8 @@ class IpAddressCheckReputation(object):
         self.virustotal_api_key = os.getenv("VIRUS_TOTAL_KEY")
         self.ipqualityscore_api_key = os.getenv("IPQS_KEY")
         self.apivoid_api_key = os.getenv("APIVOID_KEY")
+        self.abuseipdb_api_key = os.getenv("ABUSEIPDB_KEY")
+        
         
 
         # Connect to Shodan API
@@ -224,6 +242,41 @@ class IpAddressCheckReputation(object):
 
         return VirusTotalInfo(nb_malicious, nb_suspicious, reputation,
                               harmless_votes, malicious_votes)
+
+
+    def abusipdp_stats(self) -> AbuseIpDbInfo:
+        """
+        Call AbuseIpDb API to get information
+        """
+        if self.abuseipdb_api_key is None:
+            return None
+        try:
+            # Defining the api-endpoint
+            url = 'https://api.abuseipdb.com/api/v2/check'
+
+            querystring = {
+                'ipAddress': format(self.ip),
+                'maxAgeInDays': '90'
+            }
+
+            headers = {
+                'Accept': 'application/json',
+                'Key': self.abuseipdb_api_key
+            }
+
+            response = requests.get(url, headers=headers, params=querystring)
+
+            res = json.loads(response.text)
+            print(res)
+            total_reports = res["data"]["totalReports"]
+            abuse_confidence_score = res["data"]["abuseConfidenceScore"]
+
+        except Exception as e:
+            print("AbuseIpDb error: {}".format(e), file=sys.stderr)
+            return None
+
+        return AbuseIpDbInfo(total_reports,abuse_confidence_score)
+
 
     def ip_quality_score_stats(self) -> IpQualityScoreInfo:
         """
@@ -312,11 +365,13 @@ def process_ip_address(ip_arg) -> DisplayIpReputationElements:
             vt_info = ip_address_info.virustotal_stats()
             # IpQualityScore information
             ip_qual_info = ip_address_info.ip_quality_score_stats()
+           # AbuseIpDb information
+            abuseipdb_info = ip_address_info.abusipdp_stats()            
             return DisplayIpReputationElements(ip_address_to_check, ip_address_to_check.is_private,
-                                           shodan_info, vt_info, ip_qual_info, apivoid_info)
+                                           shodan_info, vt_info, ip_qual_info, apivoid_info,abuseipdb_info)
         else:
             return DisplayIpReputationElements(ip_address_to_check, ip_address_to_check.is_private,
-                                           None, None, None, None)
+                                           None, None, None, None, None)
     else:
         return None
 
