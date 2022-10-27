@@ -42,7 +42,7 @@ class ShodanInfo:
     """
     """
     nb_open_ports: int
-    hostname: str
+    hostname: list
 
     def __init__(self, nb_open_ports, hostname) -> None:
         self.nb_open_ports = nb_open_ports
