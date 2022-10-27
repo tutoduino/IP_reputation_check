@@ -13,27 +13,3 @@ $python3 parse_pcap.py pcap_file.pcapng | python3 ip_reputation_check.py
 
 Usage with CVS file (";" separator):
 $python3 parse_ip_csv.py csv_file.csv | python3 ip_reputation_check.py
-
-
-Exemple on IP address 139.162.99.243: 
-$echo "139.162.99.243" | python3 ip_reputation_check.py
-139.162.99.243 is a public IP address
-Shodan           -> Number of open ports: 1
-Shodan           -> Hostnames: ['scan-42.security.ipip.net']
-AbuseIpDb        -> Number of reports: 2343
-AbuseIpDb        -> Confidence of Abuse: 100
-ApiVoid          -> Risk score: 100
-ApiVoid          -> Detection rate: 14%
-VirusTotal       -> Number of reports saying it is malicious: 3
-VirusTotal       -> Number of reports saying it is suspicious: 0
-VirusTotal       -> Reputation (<0 is suspicious): 0
-VirusTotal       -> Harmless votes: 0
-VirusTotal       -> Malicious votes: 0
-IpQualityScore   -> Fraud score (>75 is suspicious): 100
-IpQualityScore   -> Bot activity: True
-IpQualityScore   -> VPN status: True
-IpQualityScore   -> Proxy status: True
-IpQualityScore   -> Tor status: False
-------------------------------------------
-
-
