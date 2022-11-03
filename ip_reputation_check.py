@@ -267,7 +267,6 @@ class IpAddressCheckReputation(object):
             response = requests.get(url, headers=headers, params=querystring)
 
             res = json.loads(response.text)
-            print(res)
             total_reports = res["data"]["totalReports"]
             abuse_confidence_score = res["data"]["abuseConfidenceScore"]
 
