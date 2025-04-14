@@ -6,7 +6,7 @@ This program checks the reputation of a list of IP V4 addresses provided in stdi
 Initial release is based on information from Shodan, VirusTotal, ApiVoid, AbuseIpDb and IpQualityScore.
 Free accounts of these services can be used, but it limits the amount of requests (per minute/day/month).
 API keys must be stored in the .env file : SHODAN_API_KEY VIRUS_TOTAL_KEY APIVOID_KEY IPQS_KEY IPABUSEDB_KEY
-V1.0
+V1.1 IPinfo added
 23 october 2022
 MIT licence
 https://tutoduino.fr/
@@ -22,6 +22,20 @@ import sys
 from dotenv import load_dotenv
 from dataclasses import dataclass
 
+@dataclass
+class IpInfo:
+    """
+    """
+    bogon: bool
+    org: str
+    country: str
+    city: str
+
+    def __init__(self, bogon, org, country, city) -> None:
+        self.bogon = bogon
+        self.org = org
+        self.country = country
+        self.city = city
 
 @dataclass
 class ApiVoidInfo:
@@ -102,63 +116,67 @@ class DisplayIpReputationElements:
     """
     ip_addr: str
     private: bool
+    ipinfo_info: IpInfo
     shodan_info: ShodanInfo
     vt_info: VirusTotalInfo
     ipqs_info: IpQualityScoreInfo
     apivoid_info: ApiVoidInfo
 
-    def __init__(self, ip_addr: str, private: bool, shodan_info: ShodanInfo, vt_info: VirusTotalInfo, ipqs_info: IpQualityScoreInfo, apivoid_info: ApiVoidInfo, abuseipdb_info: AbuseIpDbInfo) -> None:
+    def __init__(self, ip_addr: str, private: bool, ipinfo_info: IpInfo, shodan_info: ShodanInfo, vt_info: VirusTotalInfo, ipqs_info: IpQualityScoreInfo, apivoid_info: ApiVoidInfo, abuseipdb_info: AbuseIpDbInfo) -> None:
         self.ip_addr = ip_addr
         self.private = private
         self.shodan_info = shodan_info
+        self.ipinfo_info = ipinfo_info
         self.vt_info = vt_info
         self.ipqs_info = ipqs_info
         self.apivoid_info = apivoid_info
         self.abuseipdb_info = abuseipdb_info
 
     def display_IpReputationElements(self):
-        if self.private:
-            print("{} is a private IP address".format(self.ip_addr))
-        else:
-            print("{} is a public IP address".format(self.ip_addr))
-            if self.shodan_info is not None:
-                print(
-                    "Shodan           -> Number of open ports: {}".format(self.shodan_info.nb_open_ports))
-                print(
-                    "Shodan           -> Hostnames: {}".format(self.shodan_info.hostname))
-            if self.abuseipdb_info is not None:
-                print(
-                    "AbuseIpDb        -> Number of reports: {}".format(self.abuseipdb_info.total_reports))
-                print(
-                    "AbuseIpDb        -> Confidence of Abuse: {}".format(self.abuseipdb_info.abuse_confidence_score))
-            if self.apivoid_info is not None:
-                print(
-                    "ApiVoid          -> Risk score: {}".format(self.apivoid_info.risk_score))    
-                print(
-                    "ApiVoid          -> Detection rate: {}".format(self.apivoid_info.detection_rate))                    
-            if self.vt_info is not None:
-                print(
-                    "VirusTotal       -> Number of reports saying it is malicious: {}".format(self.vt_info.nb_malicious))
-                print(
-                    "VirusTotal       -> Number of reports saying it is suspicious: {}".format(self.vt_info.nb_suspicious))
-                print(
-                    "VirusTotal       -> Reputation (<0 is suspicious): {}".format(self.vt_info.reputation))
-                print(
-                    "VirusTotal       -> Harmless votes: {}".format(self.vt_info.harmless_votes))
-                print(
-                    "VirusTotal       -> Malicious votes: {}".format(self.vt_info.malicious_votes))
-            if self.ipqs_info is not None:
-                print(
-                    "IpQualityScore   -> Fraud score (>75 is suspicious): {}".format(self.ipqs_info.fraud_score))
-                print(
-                    "IpQualityScore   -> Bot activity: {}".format(self.ipqs_info.bot_activity))
-                print(
-                    "IpQualityScore   -> VPN status: {}".format(self.ipqs_info.vpn_status))
-                print(
-                    "IpQualityScore   -> Proxy status: {}".format(self.ipqs_info.proxy_status))
-                print(
-                    "IpQualityScore   -> Tor status: {}".format(self.ipqs_info.tor_status))
-        print("------------------------------------------")
+        if self.ipinfo_info is not None:
+            print(
+                "IPinfo           -> Organization: {}".format(self.ipinfo_info.org))
+            print(
+                "IPinfo           -> Country: {}".format(self.ipinfo_info.country))
+            print(
+                "IPinfo           -> City: {}".format(self.ipinfo_info.city))
+        if self.shodan_info is not None:
+            print(
+                "Shodan           -> Number of open ports: {}".format(self.shodan_info.nb_open_ports))
+            print(
+                "Shodan           -> Hostnames: {}".format(self.shodan_info.hostname))
+        if self.abuseipdb_info is not None:
+            print(
+                "AbuseIpDb        -> Number of reports: {}".format(self.abuseipdb_info.total_reports))
+            print(
+                "AbuseIpDb        -> Confidence of Abuse: {}".format(self.abuseipdb_info.abuse_confidence_score))
+        if self.apivoid_info is not None:
+            print(
+                "ApiVoid          -> Risk score: {}".format(self.apivoid_info.risk_score))    
+            print(
+                "ApiVoid          -> Detection rate: {}".format(self.apivoid_info.detection_rate))                    
+        if self.vt_info is not None:
+            print(
+                "VirusTotal       -> Number of reports saying it is malicious: {}".format(self.vt_info.nb_malicious))
+            print(
+                "VirusTotal       -> Number of reports saying it is suspicious: {}".format(self.vt_info.nb_suspicious))
+            print(
+                "VirusTotal       -> Reputation (<0 is suspicious): {}".format(self.vt_info.reputation))
+            print(
+                "VirusTotal       -> Harmless votes: {}".format(self.vt_info.harmless_votes))
+            print(
+                "VirusTotal       -> Malicious votes: {}".format(self.vt_info.malicious_votes))
+        if self.ipqs_info is not None:
+            print(
+                "IpQualityScore   -> Fraud score (>75 is suspicious): {}".format(self.ipqs_info.fraud_score))
+            print(
+                "IpQualityScore   -> Bot activity: {}".format(self.ipqs_info.bot_activity))
+            print(
+                "IpQualityScore   -> VPN status: {}".format(self.ipqs_info.vpn_status))
+            print(
+                "IpQualityScore   -> Proxy status: {}".format(self.ipqs_info.proxy_status))
+            print(
+                "IpQualityScore   -> Tor status: {}".format(self.ipqs_info.tor_status))
 
 
 class IpAddressCheckReputation(object):
@@ -180,8 +198,6 @@ class IpAddressCheckReputation(object):
         self.ipqualityscore_api_key = os.getenv("IPQS_KEY")
         self.apivoid_api_key = os.getenv("APIVOID_KEY")
         self.abuseipdb_api_key = os.getenv("ABUSEIPDB_KEY")
-        
-        
 
         # Connect to Shodan API
         if self.shodan_api_key is not None:
@@ -322,6 +338,29 @@ class IpAddressCheckReputation(object):
 
         return ShodanInfo(nb_opened_ports,hostname)
 
+    def ipinfo_stats(self) -> IpInfo:
+        """
+        Call IPinfo API to get information
+        """
+        try:
+
+            response = requests.get(f"http://ipinfo.io/"+format(self.ip)+"/json")
+            data = response.json()
+            if "bogon" in data:
+                bogon = True
+                org = ""
+                country = ""
+                city = ""
+            else:
+                bogon = False
+                org = data["org"]
+                country = data["country"]
+                city = data["city"]
+        except Exception as e:
+            print("IpInfo error: {}".format(e), file=sys.stderr)
+            return None
+
+        return IpInfo(bogon,org,country,city)
 
 def is_ip_v4_valid_ip_address(ip_addr):
     """
@@ -352,10 +391,22 @@ def process_ip_address(ip_arg) -> DisplayIpReputationElements:
     Argument : ip_arg should be a valid IP V4 address
     Return : list of information to display on this IP
     """
+    print("-------------------------------")
     if is_ip_v4_valid_ip_address(ip_arg):
         ip_address_to_check = ipaddress.IPv4Address(ip_arg)
         ip_address_info = IpAddressCheckReputation(ip_address_to_check)
-        if not ip_address_to_check.is_private:
+        if ip_address_to_check.is_private:
+           print("{} is a private IP address, no info to display".format(ip_arg))
+           return None            
+        else:
+            # IpInfo infomation
+            ipinfo_info = ip_address_info.ipinfo_stats()
+            # If IpInfo indicates this is a bogon IP address, do not print IP detailed info
+            if (ipinfo_info is not None) and (ipinfo_info.bogon is True):
+                print("{} is a bogon IP address, no info to display".format(ip_arg))
+                return None
+            else:
+                print("IP address {}".format(ip_arg))
             # Shodan infomation
             shodan_info = ip_address_info.shodan_stats()
             # ApiVoid information
@@ -367,10 +418,7 @@ def process_ip_address(ip_arg) -> DisplayIpReputationElements:
            # AbuseIpDb information
             abuseipdb_info = ip_address_info.abusipdp_stats()            
             return DisplayIpReputationElements(ip_address_to_check, ip_address_to_check.is_private,
-                                           shodan_info, vt_info, ip_qual_info, apivoid_info,abuseipdb_info)
-        else:
-            return DisplayIpReputationElements(ip_address_to_check, ip_address_to_check.is_private,
-                                           None, None, None, None, None)
+                                           ipinfo_info, shodan_info, vt_info, ip_qual_info, apivoid_info,abuseipdb_info)
     else:
         return None
 
